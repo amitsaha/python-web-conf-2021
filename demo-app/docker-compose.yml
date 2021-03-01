@@ -65,8 +65,14 @@ services:
   prometheus-server:    
     image: prom/prometheus:latest
     links:
-      - otel-collector
+      - statsd
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+  stastd:
+    image: prom/statsd-exporter
+    container_name: statsd
+    expose:
+      - 9125
+      - 9102
