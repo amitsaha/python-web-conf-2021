@@ -2,18 +2,9 @@ receivers:
   opencensus:
 
 exporters:
-  logging:
   jaeger:
     endpoint: jaeger-all-in-one:14250
     insecure: true
-  otlp:
-    endpoint: "api.honeycomb.io:443"
-    headers:
-      "x-honeycomb-team": "SDK-KEY"
-      "x-honeycomb-dataset": "otel-demo-python"
-  prometheus:
-    endpoint: "0.0.0.0:8889"
-
 processors:
   batch:
   queued_retry:
@@ -32,6 +23,3 @@ service:
       receivers: [opencensus]
       processors: [batch, queued_retry]
       exporters: [jaeger, otlp]
-    metrics:
-      receivers: [opencensus]
-      exporters: [prometheus]

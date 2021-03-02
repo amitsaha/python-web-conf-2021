@@ -7,6 +7,8 @@ services:
     links:
       - db
       - otel-agent
+    ports:
+      8000:8000
     environment:
       OTEL_AGENT: otel-agent  
   service2:

@@ -5,4 +5,4 @@ RUN pip install mysql-connector
 ADD . /application
 WORKDIR /application
 RUN pip install -r requirements.txt
-CMD ["uwsgi", "--http", ":5000",  "--mount", "/myapplication=app:app", "--processes", "10"]
+CMD ["gunicorn", "--log-config", "gunicorn_logging.conf", "--workers", "5", "--bind", "0.0.0.0:8000", "app:app"]

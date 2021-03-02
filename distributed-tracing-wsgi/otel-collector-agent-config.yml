@@ -1,5 +1,4 @@
 receivers:
-  opencensus:
   otlp:
     protocols:
       grpc:      
@@ -9,11 +8,11 @@ processors:
       - key: environment
         value: test
         action: insert
-exporters: 
+exporters:
   opencensus:
     endpoint: "otel-collector:55678"
-    insecure: true  
-  
+    insecure: true
+
 extensions:
   pprof:
     endpoint: :1777
@@ -27,7 +26,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [attributes]
-      exporters: [opencensus]
-    metrics:
-      receivers: [opencensus]  
       exporters: [opencensus]
