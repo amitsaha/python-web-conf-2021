@@ -1,19 +1,24 @@
 # Logging stuff
+import logging
+import time
+import uuid
 from datetime import datetime
 
-from pythonjsonlogger import jsonlogger
-import logging
-import uuid
-
-# Flask and friends
-from flask import Flask, request
-import werkzeug
+from datadog import statsd
 
 # HTTP client library
 import requests
+import werkzeug
+# Flask and friends
+from flask import Flask, request
+from pythonjsonlogger import jsonlogger
+
+# Metrics
+from metrics_middleware import setup_metrics
 
 # Other libraries
-import os
+import json
+
 
 # Set up the logging really early before initialization
 # of the Flask app instance
@@ -31,6 +36,8 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
 
 
 logger = logging.getLogger()
+# gunicorn logging configuration will register a handler as well
+# so we clear any handlers
 if logger.hasHandlers():
     logger.handlers.clear()
 
@@ -41,7 +48,7 @@ logger.addHandler(logHandler)
 logger.setLevel(logging.DEBUG)
 
 app = Flask(__name__)
-app.logger = logger
+setup_metrics(app)
 
 REQUEST_ID_HEADERS = ["X-Trace-ID", "X-Request-ID"]
 
@@ -87,7 +94,21 @@ def log_response(response):
 
 def do_stuff():
     headers = {'X-Request-ID': request.request_id}
-    return requests.get('http://service2:8000', headers=headers)
+
+    # TODO: Put in a context manager
+    request_start = time.time()
+    data = requests.get('http://service2:8000', headers=headers)
+    request_stop = time.time()
+    latency = request_stop - request_start
+
+    statsd.histogram("client_request_latency",
+                     latency,
+                     tags=[
+                         'origin:service1',
+                         'destination:service2',
+                     ]
+                     )
+    return data
 
 
 @app.route('/')

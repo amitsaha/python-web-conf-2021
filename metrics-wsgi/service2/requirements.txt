@@ -1,0 +1,5 @@
+Flask==1.1.2
+python-json-logger==2.0.1
+gunicorn==20.0.4
+datadog==0.40.1
+

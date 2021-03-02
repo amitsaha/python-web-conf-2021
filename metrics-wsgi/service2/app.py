@@ -5,12 +5,18 @@ from pythonjsonlogger import jsonlogger
 import logging
 import uuid
 
+# metrics
+from metrics_middleware import setup_metrics
+
 # Flask and friends
 from flask import Flask, request
 import werkzeug
 
 import mysql.connector
 import os
+# Other libraries
+import json
+
 
 # Adding any custom fields to be added to all logs
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
@@ -23,7 +29,10 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         if not log_record.get('request_id'):
             log_record['request_id'] = request.request_id
 
+
 logger = logging.getLogger()
+# gunicorn logging configuration will register a handler as well
+# so we clear any handlers
 if logger.hasHandlers():
     logger.handlers.clear()
 logHandler = logging.StreamHandler()
@@ -32,10 +41,11 @@ logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
 logger.setLevel(logging.DEBUG)
 
-
 app = Flask(__name__)
+setup_metrics(app)
 
 REQUEST_ID_HEADERS = ["X-Trace-ID", "X-Request-ID"]
+
 
 def get_or_set_request_id():
     # TODO: Ideally check if we are in a request context
@@ -43,6 +53,7 @@ def get_or_set_request_id():
         if h in request.headers:
             return request.headers[h]
     return str(uuid.uuid4())
+
 
 # setup middleware to log the request
 # before handling it
@@ -62,6 +73,7 @@ def log_request():
         'request_body': request_body,
     })
 
+
 # setup middleware to log the response before
 # sending it back to the client
 @app.after_request
@@ -79,8 +91,8 @@ def log_response(response):
 @app.route('/')
 def index():
     cnx = mysql.connector.connect(user='joe', password='password',
-                                host='db',
-                                database='service2')
+                                  host='db',
+                                  database='service2')
     data = "<h1>Data</h1><p><table>{0}</table></p>"
     cursor = cnx.cursor()
     cursor.execute("SELECT first_name, last_name from users")
