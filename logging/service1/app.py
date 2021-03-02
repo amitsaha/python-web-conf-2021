@@ -1,19 +1,9 @@
 # Logging stuff
+from datetime import datetime
+
 from pythonjsonlogger import jsonlogger
 import logging
-
-# Distributed tracing
-
-# OpenTelemetry python imports
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.exporter.otlp.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
-
-# Intrumentation libraries for tracing
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
+import uuid
 
 # Flask and friends
 from flask import Flask, request
@@ -25,40 +15,50 @@ import requests
 # Other libraries
 import os
 
-# Initialize the tracing machinery
-resource = Resource({"service.name": "service1"})
-
-OTEL_AGENT = os.getenv('OTEL_AGENT', "otel-agent")
-otlp_exporter = OTLPSpanExporter(endpoint=OTEL_AGENT + ":4317", insecure=True)
-
-trace.set_tracer_provider(TracerProvider(resource=resource))
-tracer = trace.get_tracer(__name__)
-span_processor = BatchExportSpanProcessor(otlp_exporter)
-trace.get_tracer_provider().add_span_processor(span_processor)
-
-
-# Setup the instrumentation for the Flask app
-# and Requests library
-FlaskInstrumentor().instrument_app(app)
-RequestsInstrumentor().instrument()
-
-
 # Set up the logging really early before initialization
 # of the Flask app instance
 
+# Adding any custom fields to be added to all logs
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
+    def add_fields(self, log_record, record, message_dict):
+        super(CustomJsonFormatter, self).add_fields(log_record, record, message_dict)
+        if not log_record.get('timestamp'):
+            # this doesn't use record.created, so it is slightly off
+            now = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            log_record['timestamp'] = now
+        if not log_record.get('request_id'):
+            log_record['request_id'] = request.request_id
+
+
 logger = logging.getLogger()
+if logger.hasHandlers():
+    logger.handlers.clear()
+
 logHandler = logging.StreamHandler()
-formatter = jsonlogger.JsonFormatter()
+formatter = CustomJsonFormatter()
 logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
 logger.setLevel(logging.DEBUG)
 
 app = Flask(__name__)
+app.logger = logger
+
+REQUEST_ID_HEADERS = ["X-Trace-ID", "X-Request-ID"]
+
+
+def get_or_set_request_id():
+    # TODO: Ideally check if we are in a request context
+    for h in REQUEST_ID_HEADERS:
+        if h in request.headers:
+            return request.headers[h]
+    return str(uuid.uuid4())
+
 
 # setup middleware to log the request
 # before handling it
 @app.before_request
-def record_request():
+def log_request():
+    request.request_id = get_or_set_request_id()
     request_body = "{}"
     if request.method == "POST":
         if request.content_type == "application/json":
@@ -71,32 +71,37 @@ def record_request():
         'request_body': request_body,
     })
 
+
 # setup middleware to log the response before
 # sending it back to the client
 @app.after_request
-def record_response(response):
+def log_response(response):
     logger.info('Request processed', extra={
         'request_path': request.path,
         'response_status': response.status_code
     })
 
+    response.headers['X-Request-ID'] = request.request_id
     return response
 
+
 def do_stuff():
-    return requests.get('http://service2:5000')
+    headers = {'X-Request-ID': request.request_id}
+    return requests.get('http://service2:8000', headers=headers)
+
 
 @app.route('/')
 def index():
-    # We create a span here
-    with tracer.start_as_current_span("service2-request"):
-        data = do_stuff()
+    data = do_stuff()
     return data.text, 200
+
 
 @app.errorhandler(werkzeug.exceptions.HTTPException)
 def handle_500(error):
     return "Something went wrong", 500
 
+
 @app.route('/honeypot/')
 def test1():
-    1/0
+    1 / 0
     return 'lol'
