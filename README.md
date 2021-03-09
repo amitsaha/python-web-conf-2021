@@ -12,4 +12,16 @@ Docker and Docker Compose
 - [Metrics](./metrics-wsgi)
 - [Distributed Tracing](./distributed-tracing-wsgi)
 
+## OpenTelemetry, Metrics and WSGI applications
+
+I mentioned in the presentation that we cannot use OpenTelemetry APIs for exporting
+metrics from WSGI applications. The short answer is that - OpenTelemetry collector 
+[doesn't](https://github.com/open-telemetry/opentelemetry-collector/issues/1422) currently support 
+aggregation and we don't have any way to have shared state in the [opentelemetry-python
+client](https://github.com/open-telemetry/opentelemetry-python/issues/93).
+
+We have exactly the same limitation which prevents us from using Prometheus client
+in Python natively - a topic I have written [about](https://echorand.me/posts/python-prometheus-monitoring-options/).
+
+
 
