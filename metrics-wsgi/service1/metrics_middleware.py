@@ -22,7 +22,7 @@ def stop_timer(response):
                      resp_time,
                      tags=[
                          'service:service1',
-                         'endpoint: %s' % request.path,
+                         'endpoint:%s' % request.path,
                      ]
                      )
     return response
@@ -32,9 +32,9 @@ def record_request_data(response):
     statsd.increment(REQUEST_COUNT_METRIC_NAME,
                      tags=[
                          'service:service1',
-                         'method: %s' % request.method,
-                         'endpoint: %s' % request.path,
-                         'status: %s' % str(response.status_code)
+                         'method:%s' % request.method,
+                         'endpoint:%s' % request.path,
+                         'status:%s' % str(response.status_code)
                      ]
                      )
     return response
