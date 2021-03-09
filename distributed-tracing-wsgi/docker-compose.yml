@@ -31,9 +31,9 @@ services:
       - ./mysql-init:/docker-entrypoint-initdb.d
   otel-agent:
     image: otel/opentelemetry-collector
-    command: ["--config=/etc/otel-collector-agent-config.yml"]
+    command: ["--config=/etc/otel-agent-config.yml"]
     volumes:
-      - ./otel-collector-agent-config.yml:/etc/otel-collector-agent-config.yml
+      - ./otel-agent-config.yml:/etc/otel-agent-config.yml
     links:
       - otel-collector
     depends_on:

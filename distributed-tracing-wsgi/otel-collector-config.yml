@@ -7,7 +7,6 @@ exporters:
     insecure: true
 processors:
   batch:
-  queued_retry:
 
 extensions:
   health_check:
@@ -21,5 +20,5 @@ service:
   pipelines:
     traces:
       receivers: [opencensus]
-      processors: [batch, queued_retry]
-      exporters: [jaeger, otlp]
+      processors: [batch]
+      exporters: [jaeger]

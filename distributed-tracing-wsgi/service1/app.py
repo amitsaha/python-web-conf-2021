@@ -43,7 +43,7 @@ RequestsInstrumentor().instrument()
 
 
 def do_stuff():
-    return requests.get('http://service2:5000')
+    return requests.get('http://service2:8000')
 
 @app.route('/')
 def index():
