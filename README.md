@@ -2,17 +2,18 @@
 
 This repository contains materials for my talk [You Have Written A Web Application, Now What?](https://2021.pythonwebconf.com/presentations/you-have-written-a-web-application-now-what).
 
-# Tools needed
+# Demos
+## Tools needed
 
 Docker and Docker Compose
 
-## Demos
+## Code
 
 - [Logging](./logging-wsgi)
 - [Metrics](./metrics-wsgi)
 - [Distributed Tracing](./distributed-tracing-wsgi)
 
-## OpenTelemetry, Metrics and WSGI applications
+# OpenTelemetry, Metrics and WSGI applications
 
 I mentioned in the presentation that we cannot use OpenTelemetry APIs for exporting
 metrics from WSGI applications. The short answer is that - OpenTelemetry collector 
@@ -23,5 +24,9 @@ client](https://github.com/open-telemetry/opentelemetry-python/issues/93).
 We have exactly the same limitation which prevents us from using Prometheus client
 in Python natively - a topic I have written [about](https://echorand.me/posts/python-prometheus-monitoring-options/).
 
+# Explore more
+
+- [OpenTelemetry Automatic instrumentation](https://lightstep.com/blog/opentelemetry-automatic-instrumentation/)
+- [OpenTelemetry + AWS Lambda + Python](https://lightstep.com/blog/opentelemetry-lambda-for-python/)
 
 
